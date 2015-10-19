@@ -1,5 +1,6 @@
-This script allows Google Apps admins to import mbox files in bulk for their
-users.
+#Import .mbox files to Google Apps for Work
+
+This script allows Google Apps admins to import mbox files in bulk for their users.
 
 You only authorize it once using a service account, and then it can import mail
 into the mailboxes of all users in your domain.
@@ -11,9 +12,8 @@ and log in as a domain super administrator.
 
 2. Create a new project.
 
-If you have not used the API console before, select Create a project from the Select a project dropdown list.
-
-If this is not your first project, use the Create Project button.
+ * If you have not used the API console before, select "Create a project" from the Select a project dropdown list.
+ * If this is not your first project, use the "Create Project" button.
 
 3. Enter "Gmail API" (or any name you prefer) as the project name and press the
 "Create" button. If this is your first project you must agree to the Terms of
@@ -47,8 +47,9 @@ Apps domain: https://admin.google.com/AdminHome?chromeless=1#OGX:ManageOauthClie
 14. Under "Client Name", enter the Client ID collected in step 12.
 
 15. Under "One or More API Scopes", enter the following:
-https://www.googleapis.com/auth/gmail.insert, https://www.googleapis.com/auth/gmail.labels
-
+   ```
+   https://www.googleapis.com/auth/gmail.insert, https://www.googleapis.com/auth/gmail.labels
+   ```
 16. Click "Authorize".
 
 You can now use the JSON file to authorize programs to access the Gmail API "insert" and "label" scopes of all users in your Google Apps domain.
@@ -63,11 +64,11 @@ needed: https://www.python.org/downloads/
 3. Install the Google API Client Libraries for Python by running (all in one
 line):
 
-Mac/Linux: sudo pip install --upgrade google-api-python-client
+   Mac/Linux: `sudo pip install --upgrade google-api-python-client`
 
-Windows: C:\Python27\Scripts\pip.exe install --upgrade google-api-python-client
+   Windows: `C:\Python27\Scripts\pip.exe install --upgrade google-api-python-client`
 
-Note: On Windows, you may need to do this on a Command Prompt window that was
+   Note: On Windows, you may need to do this on a Command Prompt window that was
 run as Administrator.
 
 4. Create a folder for the mbox files, for example "C:\mbox".
@@ -77,31 +78,33 @@ intend to import the mbox files. The folder names should be the users' full
 email addresses.
 
 6. Into each of the folders, copy the mbox files for that user. Make sure the
-file name format is <LabelName>.mbox. For example, if you want the messages to
+file name format is &lt;LabelName&gt;.mbox. For example, if you want the messages to
 go into a label called "Imported messages", name the file
 "Imported messages.mbox".
 
 Your final folder and file structure should look like this (for example):
-C:\mbox
+```C:\mbox
 C:\mbox\user1@domain.com
 C:\mbox\user1@domain.com\Imported messages.mbox
 C:\mbox\user1@domain.com\Other imported messages.mbox
 C:\mbox\user2@domain.com
 C:\mbox\user2@domain.com\Imported messages.mbox
 C:\mbox\user2@domain.com\Other imported messages.mbox
+```
 
 IMPORTANT: It's essential to test the migration before migrating into the real
 users' mailboxes. First, migrate the mbox files into a test user, to make sure
 the messages are imported correctly.
 
 To start the migration, run the following command (one line):
+```
 import-mbox-to-gmail.py --json Credentials.json --dir C:\mbox --replaceqp >> import-mbox-to-gmail.log 2>&1
+```
 
 Replace "Credentials.json" with the path to the JSON file from step 10 above.
 Replace "C:\mbox" with the path to the folder you created in step 4.
 
-Note: On Linux, use ./import-mailbox-to-gmail.py instead of
-import-mailbox-to-gmail.py.
+Note: On Linux, use `./import-mailbox-to-gmail.py` instead of `import-mailbox-to-gmail.py`.
 
 The mbox files will now be imported, one by one, into the users' mailboxes. You
 can monitor the migration by viewing the import-mbox-to-gmail.log file.
