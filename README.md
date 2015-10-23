@@ -61,12 +61,11 @@ needed: https://www.python.org/downloads/
 
 2. Open a Command Prompt (CMD) window (on Windows) / Terminal window (on Linux).
 
-3. Install the Google API Client Libraries for Python by running (all in one
-line):
+3. Install the Google API Client Libraries for Python and their dependencies by running:
 
-   Mac/Linux: `sudo pip install --upgrade google-api-python-client`
+   Mac/Linux: `sudo pip install --upgrade google-api-python-client PyOpenSSL`
 
-   Windows: `C:\Python27\Scripts\pip.exe install --upgrade google-api-python-client`
+   Windows: `C:\Python27\Scripts\pip.exe install --upgrade google-api-python-client PyOpenSSL`
 
    Note: On Windows, you may need to do this on a Command Prompt window that was
 run as Administrator.
