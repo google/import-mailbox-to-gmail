@@ -19,6 +19,7 @@ limitations under the License.
 
 import argparse
 import base64
+import io
 import json
 import logging
 import mailbox
@@ -26,6 +27,7 @@ import os
 
 from apiclient import discovery
 import httplib2
+from apiclient.http import MediaIoBaseUpload
 from oauth2client.client import SignedJwtAssertionCredentials
 
 parser = argparse.ArgumentParser(
@@ -122,7 +124,7 @@ def main():
       level='INFO',
       format=('%(asctime)s %(process)d %(levelname)s %(funcName)s '
               '(%(filename)s:%(lineno)d) %(message)s'),
-      datefmt='%Y-%m-%dT%H:%M:%S%z')
+      datefmt='%Y-%m-%dT%H:%M:%S (%z)')
   logging.info(
       "Starting processing of directory '%s' with JSON file '%s' for "
       "credentials.",
@@ -191,17 +193,21 @@ def main():
               except:
                 logging.exception('Failed to fix brackets in Message-ID header')
               try:
-                message_object = {
-                    'labelIds': [label_id],
-                    'raw': base64.urlsafe_b64encode(message.as_string())
-                }
+                metadata_object = {'labelIds': [label_id]}
+                # Use media upload to allow messages more than 5mb.
+                # See https://developers.google.com/api-client-library/python/guide/media_upload
+                # and http://google-api-python-client.googlecode.com/hg/docs/epy/apiclient.http.MediaIoBaseUpload-class.html.
+                message_data = io.BytesIO(message.as_string())
+                media = MediaIoBaseUpload(message_data,
+                                          mimetype='message/rfc822')
                 message_response = service.users().messages().import_(
                     userId=username,
                     fields='id',
                     neverMarkSpam=True,
                     processForCalendar=False,
                     internalDateSource='dateHeader',
-                    body=message_object).execute()
+                    body=metadata_object,
+                    media_body=media).execute()
                 logging.debug("Imported mbox message '%s' to Gmail ID %s",
                               message.get_from(), message_response['id'])
               except (KeyboardInterrupt, SystemExit):
