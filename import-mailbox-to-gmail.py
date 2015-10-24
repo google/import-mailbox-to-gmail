@@ -32,16 +32,20 @@ from oauth2client.client import SignedJwtAssertionCredentials
 
 parser = argparse.ArgumentParser(
     description='Import mbox files to a specified label for many users.',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog=
-    """The directory needs to have a subdirectory for each user (with the full
-email address as the name), and in it there needs to be a separate .mbox file
-for each label. File names must end in .mbox.
+    """
+ * The directory needs to have a subdirectory for each user (with the full
+   email address as the name), and in it there needs to be a separate .mbox
+   file for each label. File names must end in .mbox.
 
-  Filename format: <user@domain.com>/<labelname>.mbox.
-Example: joe@mycompany.com/Migrated messages.mbox - This is a file named
-"Migrated messages.mbox" in the "joe@mycompany.com" subdirectory. It will be
-imported into joe@mycompany.com's Gmail account under the "Migrated messages"
-label.
+ * Filename format: <user@domain.com>/<labelname>.mbox.
+   Example: joe@mycompany.com/Migrated messages.mbox - This is a file named
+   "Migrated messages.mbox" in the "joe@mycompany.com" subdirectory.
+   It will be imported into joe@mycompany.com's Gmail account under the
+   "Migrated messages" label.
+
+ * See the README at https://goo.gl/JnFt0x for more usage information.
 """)
 parser.add_argument(
     '--json',
@@ -68,6 +72,12 @@ parser.add_argument(
     help=
     "Replace 'Content-Type: text/quoted-printable' with text/plain (default: "
     "don't change it)")
+parser.add_argument(
+    '--num_retries',
+    default=10,
+    type=int,
+    help=
+    'Maximum number of exponential backoff retries for failures (default: 10)')
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=False)
 args = parser.parse_args()
 
@@ -106,8 +116,9 @@ def get_label_id_from_name(service, username, labels, labelname):
         'name': labelname,
         'labelListVisibility': 'labelShow'
     }
-    label = service.users().labels().create(userId=username,
-                                            body=label_object).execute()
+    label = service.users().labels().create(
+        userId=username,
+        body=label_object).execute(num_retries=args.num_retries)
     logging.info("Label '%s' created", labelname)
     return label['id']
   except:
@@ -125,12 +136,9 @@ def main():
       format=('%(asctime)s %(process)d %(levelname)s %(funcName)s '
               '(%(filename)s:%(lineno)d) %(message)s'),
       datefmt='%Y-%m-%dT%H:%M:%S (%z)')
-  logging.info(
-      "Starting processing of directory '%s' with JSON file '%s' for "
-      "credentials.",
-      args.dir, args.json)
-  logging.info('fix_msgid = %s, replace_quoted_printable = %s', args.fix_msgid,
-               args.replace_quoted_printable)
+  logging.info('Arguments:')
+  for arg, value in sorted(vars(args).items()):
+      logging.info('\t%s: %r', arg, value)
   for username in next(os.walk(args.dir))[1]:
     try:
       logging.info('Processing user %s', username)
@@ -145,7 +153,7 @@ def main():
       try:
         results = service.users().labels().list(
             userId=username,
-            fields='labels(id,name)').execute()
+            fields='labels(id,name)').execute(num_retries=args.num_retries)
         labels = results.get('labels', [])
       except:
         logging.exception("Can't get labels for user %s", username)
@@ -207,7 +215,7 @@ def main():
                     processForCalendar=False,
                     internalDateSource='dateHeader',
                     body=metadata_object,
-                    media_body=media).execute()
+                    media_body=media).execute(num_retries=args.num_retries)
                 logging.debug("Imported mbox message '%s' to Gmail ID %s",
                               message.get_from(), message_response['id'])
               except (KeyboardInterrupt, SystemExit):
