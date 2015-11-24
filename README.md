@@ -40,20 +40,20 @@ doesn't matter.
 10. A JSON file will be downloaded. You'll need to to use the tool later. Click
 "Close" to close the "New public/private key pair" dialog.
 
-13. Click the service account email address.
+11. Click the service account email address.
 
-14. Copy the Client ID that is now shown (a long number).
+12. Copy the Client ID that is now shown (a long number).
 
-15. Go to the Manage API client access page of the Admin console for your Google
+13. Go to the Manage API client access page of the Admin console for your Google
 Apps domain: https://admin.google.com/AdminHome?chromeless=1#OGX:ManageOauthClients
 
-16. Under "Client Name", enter the Client ID collected in step 12.
+14. Under "Client Name", enter the Client ID collected in step 12.
 
-17. Under "One or More API Scopes", enter the following:
+15. Under "One or More API Scopes", enter the following:
    ```
    https://www.googleapis.com/auth/gmail.insert, https://www.googleapis.com/auth/gmail.labels
    ```
-18. Click "Authorize".
+16. Click "Authorize".
 
 You can now use the JSON file to authorize programs to access the Gmail API "insert" and "label" scopes of all users in your Google Apps domain.
 
