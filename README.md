@@ -9,7 +9,7 @@ If you want to migrate from Mozilla Thunderbird, try [mail-importer](https://git
 You only authorize it once using a service account, and then it can import mail
 into the mailboxes of all users in your domain.
 
-A. Creating and authorizing a service account for Gmail API
+###A. Creating and authorizing a service account for Gmail API
 
 1. Go to the Developers Console (https://console.developers.google.com/project)
 and log in as a domain super administrator.
@@ -33,32 +33,31 @@ doesn't matter.
 
 7. Click "Add credentials".
 
-8. Select "Service account".
+8. Click "Service account".
 
 9. Select "JSON" and click "Create".
 
 10. A JSON file will be downloaded. You'll need to to use the tool later. Click
 "Close" to close the "New public/private key pair" dialog.
 
-11. Click the service account email address (ending in
-@developer.gserviceaccount.com).
+13. Click the service account email address.
 
-12. Copy the Client ID (ending in .apps.googleusercontent.com).
+14. Copy the Client ID that is now shown (a long number).
 
-13. Go to the Manage API client access page of the Admin console for your Google
+15. Go to the Manage API client access page of the Admin console for your Google
 Apps domain: https://admin.google.com/AdminHome?chromeless=1#OGX:ManageOauthClients
 
-14. Under "Client Name", enter the Client ID collected in step 12.
+16. Under "Client Name", enter the Client ID collected in step 12.
 
-15. Under "One or More API Scopes", enter the following:
+17. Under "One or More API Scopes", enter the following:
    ```
    https://www.googleapis.com/auth/gmail.insert, https://www.googleapis.com/auth/gmail.labels
    ```
-16. Click "Authorize".
+18. Click "Authorize".
 
 You can now use the JSON file to authorize programs to access the Gmail API "insert" and "label" scopes of all users in your Google Apps domain.
 
-B. Importing mbox files using import-mailbox-to-gmail.py
+###B. Importing mbox files using import-mailbox-to-gmail.py
 
 1. Download and install Python 2.7 (not Python 3.4) for your operating system if
 needed: https://www.python.org/downloads/
