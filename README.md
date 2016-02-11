@@ -45,7 +45,9 @@ You can leave the default APIs enabled - it doesn't matter.
 
 12. Click "Create". You will see a confirmation message advising that the Service account
 JSON file has been downloaded to your computer. Make a note of the location and name of
-this file. 
+this file. **This JSON file contains a private key that potentially allows access to all
+users in your domain. Protect it like you'd protect your admin password. Don't share it
+with anyone.**
 
 13. Click "Close".
 
