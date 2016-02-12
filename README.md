@@ -106,19 +106,19 @@ file name format is &lt;LabelName&gt;.mbox. For example, if you want the message
 go into a label called "Imported messages", name the file
 "Imported messages.mbox".
 
-Your final folder and file structure should look like this (for example):
-```C:\mbox
-C:\mbox\user1@domain.com
-C:\mbox\user1@domain.com\Imported messages.mbox
-C:\mbox\user1@domain.com\Other imported messages.mbox
-C:\mbox\user2@domain.com
-C:\mbox\user2@domain.com\Imported messages.mbox
-C:\mbox\user2@domain.com\Other imported messages.mbox
-```
+  Your final folder and file structure should look like this (for example):
+  ```C:\mbox
+  C:\mbox\user1@domain.com
+  C:\mbox\user1@domain.com\Imported messages.mbox
+  C:\mbox\user1@domain.com\Other imported messages.mbox
+  C:\mbox\user2@domain.com
+  C:\mbox\user2@domain.com\Imported messages.mbox
+  C:\mbox\user2@domain.com\Other imported messages.mbox
+  ```
 
-IMPORTANT: It's essential to test the migration before migrating into the real
-users' mailboxes. First, migrate the mbox files into a test user, to make sure
-the messages are imported correctly.
+  IMPORTANT: It's essential to test the migration before migrating into the real
+  users' mailboxes. First, migrate the mbox files into a test user, to make sure
+  the messages are imported correctly.
 
 8. To start the migration, run the following command (one line):
     Mac/Linux:
