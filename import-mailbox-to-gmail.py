@@ -116,12 +116,9 @@ def get_credentials(username):
   Returns:
     Credentials, the obtained credential.
   """
-  # json_file = json.load(open(args.json))
-  # credentials = SignedJwtAssertionCredentials(json_file['client_email'],
-  #                                             json_file['private_key'],
-  #                                             SCOPES,
-  #                                             sub=username)
-  credentials = ServiceAccountCredentials.from_json_keyfile_name(args.json, scopes=SCOPES).create_delegated(username)
+  credentials = ServiceAccountCredentials.from_json_keyfile_name(
+          args.json,
+          scopes=SCOPES).create_delegated(username)
 
   return credentials
 
