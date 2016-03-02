@@ -30,7 +30,7 @@ from apiclient import discovery
 from apiclient.http import set_user_agent
 import httplib2
 from apiclient.http import MediaIoBaseUpload
-from oauth2client.client import SignedJwtAssertionCredentials
+from oauth2client.service_account import ServiceAccountCredentials
 import oauth2client.tools
 import OpenSSL  # Required by Google API library, but not checked by it
 
@@ -116,11 +116,9 @@ def get_credentials(username):
   Returns:
     Credentials, the obtained credential.
   """
-  json_file = json.load(open(args.json))
-  credentials = SignedJwtAssertionCredentials(json_file['client_email'],
-                                              json_file['private_key'],
-                                              SCOPES,
-                                              sub=username)
+  credentials = ServiceAccountCredentials.from_json_keyfile_name(
+      args.json,
+      scopes=SCOPES).create_delegated(username)
 
   return credentials
 
