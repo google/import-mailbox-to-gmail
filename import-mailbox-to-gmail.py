@@ -117,8 +117,8 @@ def get_credentials(username):
     Credentials, the obtained credential.
   """
   credentials = ServiceAccountCredentials.from_json_keyfile_name(
-          args.json,
-          scopes=SCOPES).create_delegated(username)
+      args.json,
+      scopes=SCOPES).create_delegated(username)
 
   return credentials
 
