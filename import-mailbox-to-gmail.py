@@ -25,6 +25,7 @@ import logging
 import logging.handlers
 import mailbox
 import os
+import sys
 
 from apiclient import discovery
 from apiclient.http import set_user_agent
@@ -210,9 +211,8 @@ def process_mbox_files(username, service, labels):
         # Use media upload to allow messages more than 5mb.
         # See https://developers.google.com/api-client-library/python/guide/media_upload
         # and http://google-api-python-client.googlecode.com/hg/docs/epy/apiclient.http.MediaIoBaseUpload-class.html.
-        message_data = io.BytesIO(message.as_string().encode('utf-8'))
-        media = MediaIoBaseUpload(message_data,
-                                  mimetype='message/rfc822')
+        message_data = io.BytesIO(message.as_string().encode('ascii'))
+        media = MediaIoBaseUpload(message_data, mimetype='message/rfc822')
         message_response = service.users().messages().import_(
             userId=username,
             fields='id',
@@ -223,7 +223,8 @@ def process_mbox_files(username, service, labels):
             media_body=media).execute(num_retries=args.num_retries)
         number_of_successes_in_label += 1
         logging.debug("Imported mbox message '%s' to Gmail ID %s",
-                      message.get_from(), message_response['id'])
+                      message.get_from(),
+                      message_response['id'])
       except Exception:
         number_of_failures_in_label += 1
         logging.exception('Failed to import mbox message')
@@ -275,7 +276,10 @@ def main():
   file_handler.setFormatter(file_formatter)
   logging.getLogger().addHandler(file_handler)
 
-  logging.info('*** Starting %s %s ***', APPLICATION_NAME, APPLICATION_VERSION)
+  logging.info('*** Starting %s %s on Python %s ***',
+               APPLICATION_NAME,
+               APPLICATION_VERSION,
+               sys.version)
   logging.info('Arguments:')
   for arg, value in sorted(vars(args).items()):
     logging.info('\t%s: %r', arg, value)
