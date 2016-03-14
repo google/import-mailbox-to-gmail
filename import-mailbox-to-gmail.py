@@ -36,7 +36,7 @@ import oauth2client.tools
 import OpenSSL  # Required by Google API library, but not checked by it
 
 APPLICATION_NAME = 'import-mailbox-to-gmail'
-APPLICATION_VERSION = '1.2'
+APPLICATION_VERSION = '1.3'
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.insert',
           'https://www.googleapis.com/auth/gmail.labels']
@@ -206,12 +206,15 @@ def process_mbox_files(username, service, labels):
           message.replace_header('Message-ID', msgid)
       except Exception:
         logging.exception('Failed to fix brackets in Message-ID header')
+      metadata_object = {'labelIds': [label_id]}
       try:
-        metadata_object = {'labelIds': [label_id]}
         # Use media upload to allow messages more than 5mb.
         # See https://developers.google.com/api-client-library/python/guide/media_upload
         # and http://google-api-python-client.googlecode.com/hg/docs/epy/apiclient.http.MediaIoBaseUpload-class.html.
-        message_data = io.BytesIO(message.as_string().encode('ascii'))
+        if sys.version_info.major == 2:
+          message_data = io.BytesIO(message.as_string())
+        else:
+          message_data = io.StringIO(message.as_string())
         media = MediaIoBaseUpload(message_data, mimetype='message/rfc822')
         message_response = service.users().messages().import_(
             userId=username,
