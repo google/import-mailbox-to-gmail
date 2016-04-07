@@ -166,84 +166,98 @@ def process_mbox_files(username, service, labels):
   number_of_labels_failed = 0
   number_of_messages_imported_without_error = 0
   number_of_messages_failed = 0
-  for filename in os.listdir(os.path.join(args.dir, username)):
-    labelname, ext = os.path.splitext(filename)
-    full_filename = os.path.join(args.dir, username, filename)
-    if ext != '.mbox':
-      logging.info("Skipping '%s' because it doesn't have a .mbox extension",
-                   full_filename)
-      continue
-    logging.info("Starting processing of '%s'", full_filename)
-    number_of_successes_in_label = 0
-    number_of_failures_in_label = 0
-    mbox = mailbox.mbox(full_filename)
-    label_id = get_label_id_from_name(service, username, labels, labelname)
-    logging.info("Using label name '%s', ID '%s'", labelname, label_id)
-    for index, message in enumerate(mbox):
-      logging.info("Processing message %d in label '%s'", index,
-                    labelname)
+  base_path = os.path.join(args.dir, username)
+  for root, dirs, files in os.walk(base_path):
+    for dir in dirs:
       try:
-        if (args.replace_quoted_printable and
-            'Content-Type' in message and
-            'text/quoted-printable' in message['Content-Type']):
-          message.replace_header(
-              'Content-Type', message['Content-Type'].replace(
-                  'text/quoted-printable', 'text/plain'))
-          logging.info('Replaced text/quoted-printable with text/plain')
+        get_label_id_from_name(service, username, labels, dir)
       except Exception:
-        logging.exception(
-            'Failed to replace text/quoted-printable with text/plain '
-            'in Content-Type header')
+        logging.error("Labels under '%s' may not nest correctly", dir)
+    for file in files:
+      filename = root[len(base_path) + 1:]
+      if filename:
+        filename += '/'
+      filename += file
+      labelname, ext = os.path.splitext(filename)
+      full_filename = os.path.join(root, file)
+      if ext != '.mbox':
+        logging.info("Skipping '%s' because it doesn't have a .mbox extension",
+                     full_filename)
+        continue
+      logging.info("Starting processing of '%s'", full_filename)
+      number_of_successes_in_label = 0
+      number_of_failures_in_label = 0
+      mbox = mailbox.mbox(full_filename)
       try:
-        if args.fix_msgid and 'Message-ID' in message:
-          msgid = message['Message-ID']
-          if msgid[0] != '<':
-            msgid = '<' + msgid
-            logging.info('Added < to Message-ID: %s', msgid)
-          if msgid[-1] != '>':
-            msgid += '>'
-            logging.info('Added > to Message-ID: %s', msgid)
-          message.replace_header('Message-ID', msgid)
+        label_id = get_label_id_from_name(service, username, labels, labelname)
       except Exception:
-        logging.exception('Failed to fix brackets in Message-ID header')
-      metadata_object = {'labelIds': [label_id]}
-      try:
-        # Use media upload to allow messages more than 5mb.
-        # See https://developers.google.com/api-client-library/python/guide/media_upload
-        # and http://google-api-python-client.googlecode.com/hg/docs/epy/apiclient.http.MediaIoBaseUpload-class.html.
-        if sys.version_info.major == 2:
-          message_data = io.BytesIO(message.as_string())
-        else:
-          message_data = io.StringIO(message.as_string())
-        media = MediaIoBaseUpload(message_data, mimetype='message/rfc822')
-        message_response = service.users().messages().import_(
-            userId=username,
-            fields='id',
-            neverMarkSpam=True,
-            processForCalendar=False,
-            internalDateSource='dateHeader',
-            body=metadata_object,
-            media_body=media).execute(num_retries=args.num_retries)
-        number_of_successes_in_label += 1
-        logging.debug("Imported mbox message '%s' to Gmail ID %s",
-                      message.get_from(),
-                      message_response['id'])
-      except Exception:
-        number_of_failures_in_label += 1
-        logging.exception('Failed to import mbox message')
-    logging.info("Finished processing '%s'. %d messages imported successfully, "
-                 "%d messages failed.",
-                 full_filename,
-                 number_of_successes_in_label,
-                 number_of_failures_in_label)
-    if number_of_failures_in_label == 0:
-      number_of_labels_imported_without_error += 1
-    elif number_of_successes_in_label > 0:
-      number_of_labels_imported_with_some_errors += 1
-    else:
-      number_of_labels_failed += 1
-    number_of_messages_imported_without_error += number_of_successes_in_label
-    number_of_messages_failed += number_of_failures_in_label
+        logging.error("Skipping label '%s' because it can't be created")
+        continue
+      logging.info("Using label name '%s', ID '%s'", labelname, label_id)
+      for index, message in enumerate(mbox):
+        logging.info("Processing message %d in label '%s'", index, labelname)
+        try:
+          if (args.replace_quoted_printable and
+              'Content-Type' in message and
+              'text/quoted-printable' in message['Content-Type']):
+            message.replace_header(
+                'Content-Type', message['Content-Type'].replace(
+                    'text/quoted-printable', 'text/plain'))
+            logging.info('Replaced text/quoted-printable with text/plain')
+        except Exception:
+          logging.exception(
+              'Failed to replace text/quoted-printable with text/plain '
+              'in Content-Type header')
+        try:
+          if args.fix_msgid and 'Message-ID' in message:
+            msgid = message['Message-ID']
+            if msgid[0] != '<':
+              msgid = '<' + msgid
+              logging.info('Added < to Message-ID: %s', msgid)
+            if msgid[-1] != '>':
+              msgid += '>'
+              logging.info('Added > to Message-ID: %s', msgid)
+            message.replace_header('Message-ID', msgid)
+        except Exception:
+          logging.exception('Failed to fix brackets in Message-ID header')
+        metadata_object = {'labelIds': [label_id]}
+        try:
+          # Use media upload to allow messages more than 5mb.
+          # See https://developers.google.com/api-client-library/python/guide/media_upload
+          # and http://google-api-python-client.googlecode.com/hg/docs/epy/apiclient.http.MediaIoBaseUpload-class.html.
+          if sys.version_info.major == 2:
+            message_data = io.BytesIO(message.as_string())
+          else:
+            message_data = io.StringIO(message.as_string())
+          media = MediaIoBaseUpload(message_data, mimetype='message/rfc822')
+          message_response = service.users().messages().import_(
+              userId=username,
+              fields='id',
+              neverMarkSpam=True,
+              processForCalendar=False,
+              internalDateSource='dateHeader',
+              body=metadata_object,
+              media_body=media).execute(num_retries=args.num_retries)
+          number_of_successes_in_label += 1
+          logging.debug("Imported mbox message '%s' to Gmail ID %s",
+                        message.get_from(),
+                        message_response['id'])
+        except Exception:
+          number_of_failures_in_label += 1
+          logging.exception('Failed to import mbox message')
+      logging.info("Finished processing '%s'. %d messages imported "
+                   "successfully, %d messages failed.",
+                   full_filename,
+                   number_of_successes_in_label,
+                   number_of_failures_in_label)
+      if number_of_failures_in_label == 0:
+        number_of_labels_imported_without_error += 1
+      elif number_of_successes_in_label > 0:
+        number_of_labels_imported_with_some_errors += 1
+      else:
+        number_of_labels_failed += 1
+      number_of_messages_imported_without_error += number_of_successes_in_label
+      number_of_messages_failed += number_of_failures_in_label
   return (number_of_labels_imported_without_error,     # 0
           number_of_labels_imported_with_some_errors,  # 1
           number_of_labels_failed,                     # 2
