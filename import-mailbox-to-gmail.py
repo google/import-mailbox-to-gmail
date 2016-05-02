@@ -27,13 +27,12 @@ import mailbox
 import os
 import sys
 
-from apiclient import discovery
-from apiclient.http import set_user_agent
+from googleapiclient import discovery
+from googleapiclient.http import set_user_agent
 import httplib2
-from apiclient.http import MediaIoBaseUpload
+from googleapiclient.http import MediaIoBaseUpload
 from oauth2client.service_account import ServiceAccountCredentials
 import oauth2client.tools
-import OpenSSL  # Required by Google API library, but not checked by it
 
 APPLICATION_NAME = 'import-mailbox-to-gmail'
 APPLICATION_VERSION = '1.3'
