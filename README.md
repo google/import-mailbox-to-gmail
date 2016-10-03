@@ -1,6 +1,6 @@
-#Import .mbox files to Google Apps for Work
+#Import .mbox files to G Suite (formerly Google Apps for Work)
 
-This script allows Google Apps admins to import mbox files in bulk for their
+This script allows G Suite admins to import mbox files in bulk for their
 users.
 
 **DISCLAIMER**: This is not an official Google product.
@@ -14,7 +14,7 @@ into the mailboxes of all users in your domain.
 ###A. Creating and authorizing a service account for Gmail API
 
 1. Go to the Developers Console (https://console.developers.google.com/project)
-and log in as a domain super administrator.
+   and log in as a domain super administrator.
 
 2. Create a new project.
 
@@ -23,8 +23,8 @@ and log in as a domain super administrator.
  * If this is not your first project, use the **Create Project** button.
 
 3. Enter "Gmail API" (or any name you prefer) as the project name and press the
-**Create** button. If this is your first project you must agree to the Terms of
-Service at this point.
+   **Create** button. If this is your first project you must agree to the Terms of
+   Service at this point.
 
 4. Click the **Enable and manage APIs** link in the **Use Google APIs** box. 
 
@@ -58,7 +58,7 @@ Service at this point.
 15. Copy the **Client ID** value. You will need this later.
 
 16. Go to [the **Manage API client access** page of the Admin console for your
-    Google Apps domain]
+    G Suite domain]
     (https://admin.google.com/AdminHome?chromeless=1#OGX:ManageOauthClients).
 
 17. Under **Client Name**, enter the Client ID collected in step 15.
@@ -70,7 +70,7 @@ Service at this point.
 19. Click **Authorize**.
 
 You can now use the JSON file to authorize programs to access the Gmail API
-"insert" and "label" scopes of all users in your Google Apps domain.
+"insert" and "label" scopes of all users in your G Suite domain.
 
 ###B. Importing mbox files using import-mailbox-to-gmail.py
 
