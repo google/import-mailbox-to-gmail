@@ -42,7 +42,7 @@ into the mailboxes of all users in your domain.
 10. Check the **Furnish a new private key** box and ensure the key type is set
     to JSON.
 
-11. Check the **Enable Google Apps Domain-wide Delegation** box and enter a name
+11. Check the **Enable G Suite Domain-wide Delegation** box and enter a name
     in the **Product name for the consent screen** field.
 
 12. Click **Create**. You will see a confirmation message advising that the
