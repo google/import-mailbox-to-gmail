@@ -33,7 +33,7 @@ into the mailboxes of all users in your domain.
 
 6. Click the 3-line icon (**≡**) in the top left corner of the console.
 
-7. Click **Permissions** and select **Service accounts**.
+7. Click **IAM & Admin** and select **Service accounts**.
 
 8. Click **Create service account**.
 
