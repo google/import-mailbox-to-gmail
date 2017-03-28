@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Import mbox files to a specified label for many users.
 
 Liron Newman lironn@google.com
