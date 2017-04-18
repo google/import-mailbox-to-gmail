@@ -1,4 +1,4 @@
-#Import .mbox files to G Suite (formerly Google Apps for Work)
+# Import .mbox files to G Suite (formerly Google Apps for Work)
 
 This script allows G Suite admins to import mbox files in bulk for their
 users.
@@ -11,7 +11,7 @@ If you want to migrate from Mozilla Thunderbird, try
 You only authorize it once using a service account, and then it can import mail
 into the mailboxes of all users in your domain.
 
-###A. Creating and authorizing a service account for Gmail API
+### A. Creating and authorizing a service account for Gmail API
 
 1. Go to the Developers Console (https://console.developers.google.com/project)
    and log in as a domain super administrator.
@@ -72,7 +72,7 @@ into the mailboxes of all users in your domain.
 You can now use the JSON file to authorize programs to access the Gmail API
 "insert" and "label" scopes of all users in your G Suite domain.
 
-###B. Importing mbox files using import-mailbox-to-gmail.py
+### B. Importing mbox files using import-mailbox-to-gmail.py
 
 1. Download the script - [import-mailbox-to-gmail.py]
 (https://github.com/google/import-mailbox-to-gmail/releases/download/v1.3/import-mailbox-to-gmail.py)
