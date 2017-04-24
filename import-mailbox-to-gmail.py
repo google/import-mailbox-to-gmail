@@ -105,6 +105,13 @@ parser.add_argument(
     default=0,
     type=int,
     help='Debug level of the HTTP library: 0=None (default), 4=Maximum.')
+parser.add_argument(
+    '--from_message',
+    default=0,
+    type=int,
+    help=
+      'Message number to resume from, affects ALL users and ALL '
+      'mbox files (default: 0)')
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
                     logging_level='INFO')
 args = parser.parse_args()
@@ -195,7 +202,7 @@ def process_mbox_files(username, service, labels):
         logging.error("Skipping label '%s' because it can't be created")
         continue
       logging.info("Using label name '%s', ID '%s'", labelname, label_id)
-      for index, message in enumerate(mbox):
+      for index, message in enumerate(mbox, start=args.from_message):
         logging.info("Processing message %d in label '%s'", index, labelname)
         try:
           if (args.replace_quoted_printable and
