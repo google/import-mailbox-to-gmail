@@ -109,7 +109,9 @@ parser.add_argument(
     '--from_message',
     default=0,
     type=int,
-    help='Message number to resume from (default: 0)')
+    help=
+      'Message number to resume from, affects ALL users and ALL '
+      'mbox files (default: 0)')
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
                     logging_level='INFO')
 args = parser.parse_args()

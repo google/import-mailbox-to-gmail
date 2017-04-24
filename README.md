@@ -146,6 +146,7 @@ viewing the `import-mailbox-to-gmail.log` file.
 ### C. Options
 
 * Use the `--from_message` parameter to start the upload from a particular message.
-  This allows you to resume an upload if the process previously stopped. 
+  This allows you to resume an upload if the process previously stopped. (Affects
+  _all_ users and _all_ mbox files)
 
   e.g. `./import-mailbox-to-gmail.py --from_message 74336`
