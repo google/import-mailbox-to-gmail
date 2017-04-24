@@ -142,3 +142,10 @@ You can now use the JSON file to authorize programs to access the Gmail API
 The mbox files will now be imported, one by one, into the users' mailboxes. You
 can monitor the migration by looking at the output, and inspect errors by
 viewing the `import-mailbox-to-gmail.log` file.
+
+### C. Options
+
+* Use the `--from_message` parameter to start the upload from a particular message.
+  This allows you to resume an upload if the process previously stopped. 
+
+  e.g. `./import-mailbox-to-gmail.py --from_message 74336`
