@@ -202,7 +202,9 @@ def process_mbox_files(username, service, labels):
         logging.error("Skipping label '%s' because it can't be created")
         continue
       logging.info("Using label name '%s', ID '%s'", labelname, label_id)
-      for index, message in enumerate(mbox, start=args.from_message):
+      for index, message in enumerate(mbox):
+        if index < args.from_message:
+          continue
         logging.info("Processing message %d in label '%s'", index, labelname)
         try:
           if (args.replace_quoted_printable and
