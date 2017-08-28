@@ -192,6 +192,9 @@ def process_mbox_files(username, service, labels):
         logging.info("Skipping '%s' because it doesn't have a .mbox extension",
                      full_filename)
         continue
+      if os.path.isdir(full_filename):
+        # Assume this is an Apple Mail export, so there's an mbox file inside the dir.
+        full_filename += os.path.join(full_filename, 'mbox')
       logging.info("Starting processing of '%s'", full_filename)
       number_of_successes_in_label = 0
       number_of_failures_in_label = 0
