@@ -134,6 +134,9 @@ def get_credentials(username):
 
 def get_label_id_from_name(service, username, labels, labelname):
   """Get label ID if it already exists, otherwise create it."""
+  if labelname.endswith('.mbox'):
+    # Strip .mbox suffix from folder names
+    labelname = labelname[:-5]
   for label in labels:
     if label['name'] == labelname:
       return label['id']
@@ -149,9 +152,10 @@ def get_label_id_from_name(service, username, labels, labelname):
         userId=username,
         body=label_object).execute(num_retries=args.num_retries)
     logging.info("Label '%s' created", labelname)
+    labels.append(label)
     return label['id']
   except Exception:
-    logging.error("Can't create label '%s' for user %s", labelname, username)
+    logging.exception("Can't create label '%s' for user %s", labelname, username)
     raise
 
 
@@ -188,13 +192,23 @@ def process_mbox_files(username, service, labels):
       filename += file
       labelname, ext = os.path.splitext(filename)
       full_filename = os.path.join(root, file)
-      if ext != '.mbox':
+      if labelname.endswith('.mbox/mbox'):
+        # Assume this is an Apple Mail export, so there's an mbox file inside a
+        # dir that ends with .mbox.
+        labelname = labelname[:-10]
+        logging.info("File '%s' looks like an Apple Mail export, importing it "
+                     "into label '%s'",
+                     full_filename,
+                     labelname)
+      elif ext != '.mbox':
         logging.info("Skipping '%s' because it doesn't have a .mbox extension",
                      full_filename)
         continue
       if os.path.isdir(full_filename):
+        # This "shouldn't happen" but it does, sometimes.
         # Assume this is an Apple Mail export, so there's an mbox file inside the dir.
         full_filename += os.path.join(full_filename, 'mbox')
+        logging.info("Using '%s' instead of the directory", full_filename)
       logging.info("Starting processing of '%s'", full_filename)
       number_of_successes_in_label = 0
       number_of_failures_in_label = 0
@@ -202,7 +216,7 @@ def process_mbox_files(username, service, labels):
       try:
         label_id = get_label_id_from_name(service, username, labels, labelname)
       except Exception:
-        logging.error("Skipping label '%s' because it can't be created")
+        logging.error("Skipping label '%s' because it can't be created", labelname)
         continue
       logging.info("Using label name '%s', ID '%s'", labelname, label_id)
       for index, message in enumerate(mbox):
