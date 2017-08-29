@@ -37,7 +37,7 @@ import oauth2client.tools
 import OpenSSL  # Required by Google API library, but not checked by it
 
 APPLICATION_NAME = 'import-mailbox-to-gmail'
-APPLICATION_VERSION = '1.3'
+APPLICATION_VERSION = '1.4'
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.insert',
           'https://www.googleapis.com/auth/gmail.labels']
