@@ -74,6 +74,8 @@ You can now use the JSON file to authorize programs to access the Gmail API
 
 ### B. Importing mbox files using import-mailbox-to-gmail.py
 
+**Important**: If you're planning to import mail from Apple Mail.app, see the notes below.
+
 1. Download the script - [import-mailbox-to-gmail.py](https://github.com/google/import-mailbox-to-gmail/releases/download/v1.4/import-mailbox-to-gmail.py).
 
 2. [Download](https://www.python.org/downloads/) and install Python 2.7 (not
@@ -150,4 +152,5 @@ viewing the `import-mailbox-to-gmail.log` file.
 
   e.g. `./import-mailbox-to-gmail.py --from_message 74336`
 * If any of the folders have a ".mbox" extension, it will be dropped when creating the label for it in Gmail.
+* To import mail from Apple Mail.app, make sure you export it first - the raw Apple Mail files can't be imported. You can export a folder by right clicking it in Apple Mail and choosing "Export Mailbox".
 * If any of the folders have a ".mbox" extension and a file named "mbox" in them, the contents of the "mbox" file will be imported to the label named as the folder. This is how Apple Mail exports are structured.
