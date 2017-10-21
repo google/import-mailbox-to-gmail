@@ -13,7 +13,7 @@ into the mailboxes of all users in your domain.
 
 ### A. Creating and authorizing a service account for Gmail API
 
-1. Go to the Developers Console (https://console.developers.google.com/project)
+1. Go to the [Developers Console](https://console.developers.google.com/project)
    and log in as a domain super administrator.
 
 2. Create a new project.
@@ -126,9 +126,10 @@ You can now use the JSON file to authorize programs to access the Gmail API
   the messages are imported correctly.
 
 8. To start the migration, run the following command (one line):
+
    Mac/Linux:
    ```
-   ./import-mailbox-to-gmail.py --json Credentials.json --dir C:\mbox
+   python import-mailbox-to-gmail.py --json Credentials.json --dir C:\mbox
    ```
 
    Windows:
@@ -136,6 +137,9 @@ You can now use the JSON file to authorize programs to access the Gmail API
    C:\Python27\python import-mailbox-to-gmail.py --json Credentials.json --dir C:\mbox
    ```
 
+  * Replace `import-mailbox-to-gmail.py` with the full path of import-mailbox-to-gmail.py -
+    usually `~/Downloads/import-mailbox-to-gmail.py` on Mac/Linux or
+    `%USERPROFILE%\Downloads\import-mailbox-to-gmail.py` on Windows.
   * Replace `Credentials.json` with the path to the JSON file from step 12
     above.
   * Replace `C:\mbox` with the path to the folder you created in step 5.
