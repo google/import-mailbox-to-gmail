@@ -89,6 +89,14 @@ parser.add_argument(
     "Replace 'Content-Type: text/quoted-printable' with text/plain (default: "
     "replace it)")
 parser.add_argument(
+    '--with-labels',
+    dest='with_labels',
+    required=False,
+    action='store_false',
+    help=
+    "Preserve Gmail labels from the imported mbox as sublabels "
+    "(default: keep them)")
+parser.add_argument(
     '--num_retries',
     default=10,
     type=int,
@@ -114,6 +122,7 @@ parser.add_argument(
       'Message number to resume from, affects ALL users and ALL '
       'mbox files (default: 0)')
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
+                    with_labels=True,
                     logging_level='INFO')
 args = parser.parse_args()
 
@@ -225,7 +234,7 @@ def process_mbox_files(username, service, labels):
           continue
         logging.info("Processing message %d in label '%s'", index, labelname)
 
-        if 'X-Gmail-Labels' in message:
+        if args.with_labels and 'X-Gmail-Labels' in message:
           gmail_labels= next(reader([message['X-Gmail-Labels']]))
           #logging.info('Found Gmail Labels: %s', gmail_labels)
 
