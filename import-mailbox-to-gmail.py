@@ -25,6 +25,7 @@ import json
 import logging
 import logging.handlers
 import mailbox
+from csv import reader
 import os
 import sys
 
@@ -223,6 +224,30 @@ def process_mbox_files(username, service, labels):
         if index < args.from_message:
           continue
         logging.info("Processing message %d in label '%s'", index, labelname)
+
+        if 'X-Gmail-Labels' in message:
+          gmail_labels= next(reader([message['X-Gmail-Labels']]))
+          #logging.info('Found Gmail Labels: %s', gmail_labels)
+
+          if 'Spam' in gmail_labels:
+            logging.info("Skipped Spam message %d in label '%s'", index, labelname)
+            continue
+          if 'Trash' in gmail_labels:
+            logging.info("Skipped Trash message %d in label '%s'", index, labelname)
+            continue
+          if 'Unread' in gmail_labels:
+            gmail_labels.remove('Unread')
+
+          label_ids= [label_id]
+          for sublabel in gmail_labels:
+            sublabel= "%s/%s" %(labelname, sublabel)
+            label_ids.append(get_label_id_from_name(service, username, labels, sublabel))
+          metadata_object= {'labelIds': label_ids}
+
+        # TODO: test/handle when there is no labels header?
+        else:
+          metadata_object= {'labelIds': [label_id]}
+
         try:
           if (args.replace_quoted_printable and
               'Content-Type' in message and
@@ -235,6 +260,7 @@ def process_mbox_files(username, service, labels):
           logging.exception(
               'Failed to replace text/quoted-printable with text/plain '
               'in Content-Type header')
+
         try:
           if args.fix_msgid and 'Message-ID' in message:
             msgid = message['Message-ID']
@@ -247,7 +273,7 @@ def process_mbox_files(username, service, labels):
             message.replace_header('Message-ID', msgid)
         except Exception:
           logging.exception('Failed to fix brackets in Message-ID header')
-        metadata_object = {'labelIds': [label_id]}
+
         try:
           # Use media upload to allow messages more than 5mb.
           # See https://developers.google.com/api-client-library/python/guide/media_upload
@@ -272,6 +298,7 @@ def process_mbox_files(username, service, labels):
         except Exception:
           number_of_failures_in_label += 1
           logging.exception('Failed to import mbox message')
+
       logging.info("Finished processing '%s'. %d messages imported "
                    "successfully, %d messages failed.",
                    full_filename,
