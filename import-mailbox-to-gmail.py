@@ -105,7 +105,7 @@ parser.add_argument(
     required=False,
     action='store_false',
     help=
-    "Preserve read/unread state from Takeout mbox files "
+    "Don't preserve read/unread state from Takeout mbox files "
     "(default: keep it)")
 parser.add_argument(
     '--takeout-spam-trash',
