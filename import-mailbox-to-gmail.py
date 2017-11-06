@@ -298,7 +298,6 @@ def process_mbox_files(username, service, labels):
           logging.exception(
               'Failed to replace text/quoted-printable with text/plain '
               'in Content-Type header')
-
         try:
           if args.fix_msgid and 'Message-ID' in message:
             msgid = message['Message-ID']
