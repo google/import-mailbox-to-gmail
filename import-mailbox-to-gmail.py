@@ -20,12 +20,12 @@ limitations under the License.
 
 import argparse
 import base64
+from csv import reader
 import io
 import json
 import logging
 import logging.handlers
 import mailbox
-from csv import reader
 import os
 import sys
 
@@ -89,13 +89,32 @@ parser.add_argument(
     "Replace 'Content-Type: text/quoted-printable' with text/plain (default: "
     "replace it)")
 parser.add_argument(
-    '--with-labels',
-    dest='with_labels',
+    '--takeout-labels',
+    dest='takeout_labels',
+    choices=[True, False, 'sublabels'],
+    required=False,
+    default=True,
+    #action='store_false',
+    help=
+    "Preserve Gmail labels from Takeout mbox files. "
+    "Or optionally, transform them into sublabels. "
+    "(default: keep them)")
+parser.add_argument(
+    '--takeout-no-unread',
+    dest='takeout_no_unread',
     required=False,
     action='store_false',
     help=
-    "Preserve Gmail labels from the imported mbox as sublabels "
-    "(default: keep them)")
+    "Preserve read/unread state from Takeout mbox files "
+    "(default: keep it)")
+parser.add_argument(
+    '--takeout-spam-trash',
+    dest='takeout_spam_trash',
+    required=False,
+    action='store_true',
+    help=
+    "Import messages from Spam/Trash labels in Takeout mbox files "
+    "(default: skip them)")
 parser.add_argument(
     '--num_retries',
     default=10,
@@ -122,7 +141,6 @@ parser.add_argument(
       'Message number to resume from, affects ALL users and ALL '
       'mbox files (default: 0)')
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
-                    with_labels=True,
                     logging_level='INFO')
 args = parser.parse_args()
 
@@ -147,6 +165,8 @@ def get_label_id_from_name(service, username, labels, labelname):
   if labelname.endswith('.mbox'):
     # Strip .mbox suffix from folder names
     labelname = labelname[:-5]
+  if labelname.upper() == 'UNREAD':
+    return u'UNREAD' # magic label always there
   for label in labels:
     if label['name'] == labelname:
       return label['id']
@@ -167,6 +187,39 @@ def get_label_id_from_name(service, username, labels, labelname):
   except Exception:
     logging.exception("Can't create label '%s' for user %s", labelname, username)
     raise
+
+
+# TODO: instead of passing mbox_label_name as param, can't we look it up from id?
+def get_metadata(service, username, labels, msg, mbox_label_id, mbox_label_name):
+  """Find Gmail labels and preserve them for import.
+
+  Returns:
+    A metadata object.
+  """
+  label_ids = [mbox_label_id]
+
+  if args.takeout_labels and 'X-Gmail-Labels' in msg:
+    gmail_labels = next(reader([msg['X-Gmail-Labels'].replace('\r\n', '')]))
+    logging.info('Found Gmail Labels: %s', gmail_labels)
+
+    if args.takeout_spam_trash:
+      # TODO: test if we are importing spam/trash without renaming to sublabels
+      if 'Spam' in gmail_labels:
+        logging.info("Skipped Spam message %d in mbox '%s'", index, mbox_label_name)
+        return False
+      if 'Trash' in gmail_labels:
+        logging.info("Skipped Trash message %d in mbox '%s'", index, mbox_label_name)
+        return False
+
+    if not args.takeout_no_unread and 'Unread' in gmail_labels:
+      gmail_labels.remove('Unread')
+
+    for gmail_label in gmail_labels:
+      if args.takeout_labels == 'sublabels' and gmail_label != 'Unread':
+        gmail_label = "%s/%s" %(mbox_label_name, gmail_label)
+      label_ids.append(get_label_id_from_name(service, username, labels, gmail_label))
+
+  return {'labelIds': label_ids}
 
 
 def process_mbox_files(username, service, labels):
@@ -233,30 +286,6 @@ def process_mbox_files(username, service, labels):
         if index < args.from_message:
           continue
         logging.info("Processing message %d in label '%s'", index, labelname)
-
-        if args.with_labels and 'X-Gmail-Labels' in message:
-          gmail_labels= next(reader([message['X-Gmail-Labels']]))
-          #logging.info('Found Gmail Labels: %s', gmail_labels)
-
-          if 'Spam' in gmail_labels:
-            logging.info("Skipped Spam message %d in label '%s'", index, labelname)
-            continue
-          if 'Trash' in gmail_labels:
-            logging.info("Skipped Trash message %d in label '%s'", index, labelname)
-            continue
-          if 'Unread' in gmail_labels:
-            gmail_labels.remove('Unread')
-
-          label_ids= [label_id]
-          for sublabel in gmail_labels:
-            sublabel= "%s/%s" %(labelname, sublabel)
-            label_ids.append(get_label_id_from_name(service, username, labels, sublabel))
-          metadata_object= {'labelIds': label_ids}
-
-        # TODO: test/handle when there is no labels header?
-        else:
-          metadata_object= {'labelIds': [label_id]}
-
         try:
           if (args.replace_quoted_printable and
               'Content-Type' in message and
@@ -282,7 +311,8 @@ def process_mbox_files(username, service, labels):
             message.replace_header('Message-ID', msgid)
         except Exception:
           logging.exception('Failed to fix brackets in Message-ID header')
-
+        metadata_object = get_metadata(service, username, labels, message, label_id, labelname)
+        if not metadata_object: continue
         try:
           # Use media upload to allow messages more than 5mb.
           # See https://developers.google.com/api-client-library/python/guide/media_upload
