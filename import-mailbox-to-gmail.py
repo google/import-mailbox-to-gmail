@@ -337,7 +337,6 @@ def process_mbox_files(username, service, labels):
         except Exception:
           number_of_failures_in_label += 1
           logging.exception('Failed to import mbox message')
-
       logging.info("Finished processing '%s'. %d messages imported "
                    "successfully, %d messages failed.",
                    full_filename,
