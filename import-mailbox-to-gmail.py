@@ -138,7 +138,7 @@ def get_label_id_from_name(service, username, labels, labelname):
     # Strip .mbox suffix from folder names
     labelname = labelname[:-5]
   for label in labels:
-    if label['name'] == labelname:
+    if label['name'].upper() == labelname.upper():
       return label['id']
 
   logging.info("Label '%s' doesn't exist, creating it", labelname)
