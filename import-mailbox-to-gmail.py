@@ -182,7 +182,8 @@ def process_mbox_files(username, service, labels):
   for root, dirs, files in os.walk(base_path):
     for dir in dirs:
       try:
-        get_label_id_from_name(service, username, labels, dir)
+        labelname = os.path.join(root[len(base_path) + 1:], dir)
+        get_label_id_from_name(service, username, labels, labelname)
       except Exception:
         logging.error("Labels under '%s' may not nest correctly", dir)
     for file in files:
