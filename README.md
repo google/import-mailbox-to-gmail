@@ -157,4 +157,5 @@ viewing the `import-mailbox-to-gmail.log` file.
   e.g. `./import-mailbox-to-gmail.py --from_message 74336`
 * If any of the folders have a ".mbox" extension, it will be dropped when creating the label for it in Gmail.
 * To import mail from Apple Mail.app, make sure you export it first - the raw Apple Mail files can't be imported. You can export a folder by right clicking it in Apple Mail and choosing "Export Mailbox".
+* This script can import nested folders. In order to do so, it is necessary to preserve the email folders' hierarchy when exporting them as mbox files. In Apple Mail.app, this can be done by expanding all subfolders, selecting both parents and subfolders at the same time, and exporting them by right clicking the selection and choosing "Export Mailbox". 
 * If any of the folders have a ".mbox" extension and a file named "mbox" in them, the contents of the "mbox" file will be imported to the label named as the folder. This is how Apple Mail exports are structured.
