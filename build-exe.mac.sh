@@ -7,9 +7,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 NAME='import-mailbox-to-gmail'
 BUILD_DIR="./build"
 
-# Regenerate with, e.g. $ pwgen 16 1
-SIGNING_KEY='jouNae6aifeideeL'
-
 _uname="$(uname)"
 case "${_uname}" in
     [dD]arwin)
@@ -33,14 +30,13 @@ python2 \
     --specpath "${BUILD_DIR}" \
     --console \
     --osx-bundle-identifier "${NAME}" \
-    --key "${SIGNING_KEY}" \
     --onefile \
-    ./import-mailbox-to-gmail.py
+    import-mailbox-to-gmail.py
 _exit_code="$?"
 
 if [[ "${_exit_code}" -ne 0 ]]; then
     echo "Spec file generation failed" >&2
-    exit 1
+    exit ${_exit_code}
 fi
          
 python2 \
@@ -54,6 +50,6 @@ _exit_code="$?"
 
 if [[ "${_exit_code}" -ne 0 ]]; then
     echo "Pyinstaller invocation failed" >&2
-    exit 1
+    exit ${_exit_code}
 fi
 
