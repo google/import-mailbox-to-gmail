@@ -159,3 +159,17 @@ viewing the `import-mailbox-to-gmail.log` file.
 * To import mail from Apple Mail.app, make sure you export it first - the raw Apple Mail files can't be imported. You can export a folder by right clicking it in Apple Mail and choosing "Export Mailbox".
 * This script can import nested folders. In order to do so, it is necessary to preserve the email folders' hierarchy when exporting them as mbox files. In Apple Mail.app, this can be done by expanding all subfolders, selecting both parents and subfolders at the same time, and exporting them by right clicking the selection and choosing "Export Mailbox". 
 * If any of the folders have a ".mbox" extension and a file named "mbox" in them, the contents of the "mbox" file will be imported to the label named as the folder. This is how Apple Mail exports are structured.
+* To run under [Docker](https://www.docker.com/):
+   1. Build the image:
+	```
+	docker build -t google/import-mailbox-to-gmail .
+	```	
+   2. Run the import command:
+	```
+	docker run --rm -it \
+	    -v "/local/path/to/auth.json:/auth.json" \
+	    -v "/local/path/to/mbox:/mbox" \
+	    google/import-mailbox-to-gmail --json "/auth.json" --dir "/mbox"
+	```
+
+	**Note** `-v` is mounting a local file/directory */local/path/to/auth.json* in the container as `/auth.json`. The command is then using it within the container `--json "/auth.json"`. For more help, see [Volume in Docker Run](https://docs.docker.com/engine/reference/commandline/run/#mount-volume--v---read-only)
