@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """Import mbox files to a specified label for many users.
 
 Liron Newman lironn@google.com
@@ -189,7 +190,7 @@ def process_mbox_files(username, service, labels):
     for file in files:
       filename = root[len(base_path) + 1:]
       if filename:
-        filename += '/'
+        filename += u'/'
       filename += file
       labelname, ext = os.path.splitext(filename)
       full_filename = os.path.join(root, file)
@@ -338,7 +339,7 @@ def main():
   number_of_users_imported_with_some_errors = 0
   number_of_users_failed = 0
 
-  for username in next(os.walk(args.dir))[1]:
+  for username in next(os.walk(unicode(args.dir)))[1]:
     try:
       logging.info('Processing user %s', username)
       try:
