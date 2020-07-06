@@ -57,9 +57,8 @@ into the mailboxes of all users in your domain.
 
 15. Copy the **Client ID** value. You will need this later.
 
-16. Go to [the **Manage API client access** page of the Admin console for your
-    G Suite domain]
-    (https://admin.google.com/AdminHome?chromeless=1#OGX:ManageOauthClients).
+16. Go to [the **Domain-wide Delegation** page of the Admin console for your
+    G Suite domain](https://admin.google.com/ac/owl/domainwidedelegation).
 
 17. Under **Client Name**, enter the Client ID collected in step 15.
 
@@ -172,4 +171,4 @@ viewing the `import-mailbox-to-gmail.log` file.
 	    google/import-mailbox-to-gmail --json "/auth.json" --dir "/mbox"
 	```
 
-	**Note** `-v` is mounting a local file/directory */local/path/to/auth.json* in the container as `/auth.json`. The command is then using it within the container `--json "/auth.json"`. For more help, see [Volume in Docker Run](https://docs.docker.com/engine/reference/commandline/run/#mount-volume--v---read-only)
+	**Note** `-v` is mounting a local file/directory */local/path/to/auth.json* in the container as `/auth.json`. The command is then using it within the container `--json "/auth.json"`. For more help, see [Volume in Docker Run](https://docs.docker.com/engine/reference/commandline/run/#mount-volume--v---read-only).
