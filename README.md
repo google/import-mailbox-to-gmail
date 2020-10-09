@@ -1,6 +1,6 @@
-# Import .mbox files to G Suite (formerly Google Apps for Work)
+# Import .mbox files to Google Workspace (formerly G Suite / Google Apps)
 
-This script allows G Suite admins to import mbox files in bulk for their
+This script allows Google Workspace admins to import mbox files in bulk for their
 users.
 
 **DISCLAIMER**: This is not an official Google product.
@@ -58,18 +58,18 @@ into the mailboxes of all users in your domain.
 15. Copy the **Client ID** value. You will need this later.
 
 16. Go to [the **Domain-wide Delegation** page of the Admin console for your
-    G Suite domain](https://admin.google.com/ac/owl/domainwidedelegation).
+    Google Workspace domain](https://admin.google.com/ac/owl/domainwidedelegation).
 
-17. Under **Client Name**, enter the Client ID collected in step 15.
+17. Under **Client ID**, enter the Client ID collected in step 15.
 
-18. Under **One or More API Scopes**, enter the following:
+18. Under **OAuth Scopes**, enter the following:
    ```
    https://www.googleapis.com/auth/gmail.insert, https://www.googleapis.com/auth/gmail.labels
    ```
 19. Click **Authorize**.
 
 You can now use the JSON file to authorize programs to access the Gmail API
-"insert" and "label" scopes of all users in your G Suite domain.
+"insert" and "label" scopes of all users in your Google Workspace domain.
 
 ### B. Importing mbox files using import-mailbox-to-gmail.py
 
@@ -111,7 +111,8 @@ You can now use the JSON file to authorize programs to access the Gmail API
    "Imported messages.mbox".
 
   Your final folder and file structure should look like this (for example):
-  ```C:\mbox
+  ```
+  C:\mbox
   C:\mbox\user1@domain.com
   C:\mbox\user1@domain.com\Imported messages.mbox
   C:\mbox\user1@domain.com\Other imported messages.mbox
