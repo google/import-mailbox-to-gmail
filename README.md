@@ -77,8 +77,8 @@ You can now use the JSON file to authorize programs to access the Gmail API
 
 1. Download the script - [import-mailbox-to-gmail.py](https://github.com/google/import-mailbox-to-gmail/releases/download/v1.5/import-mailbox-to-gmail.py).
 
-2. [Download](https://www.python.org/downloads/) and install Python 2.7 (not
-   Python 3.x) for your operating system if needed.
+2. [Download](https://www.python.org/downloads/) and install Python 
+   Python for your operating system if needed.
 
 3. Open a **Command Prompt** (CMD) window (on Windows) / **Terminal** window
    (on Linux).
