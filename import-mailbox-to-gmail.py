@@ -140,20 +140,26 @@ parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
 ARGS = None
 
 # httplib2.Http (and services built on it) isn't safe to share across
-# threads, so each worker thread gets its own. Credentials themselves are
-# safe to share and are reused to avoid re-authenticating per thread.
+# threads, so each worker thread gets its own, cached here. Threads can be
+# reused across different users (e.g. by the --user_concurrency pool), so
+# the cache is keyed on the credentials identity, not just "do we have a
+# service yet" - otherwise a reused thread could silently keep importing
+# into the wrong mailbox with a stale, previously-cached service.
 _thread_local_service = threading.local()
 
 
 def get_service_for_thread(credentials):
   """Returns a Gmail API service object local to the current thread."""
-  if not hasattr(_thread_local_service, 'service'):
+  cached = getattr(_thread_local_service, 'entry', None)
+  if cached is None or cached[0] is not credentials:
     http = set_user_agent(
         httplib2.Http(), f'{APPLICATION_NAME}-{APPLICATION_VERSION}')
     authed_http = AuthorizedHttp(credentials, http=http)
-    _thread_local_service.service = discovery.build(
+    service = discovery.build(
         'gmail', 'v1', http=authed_http, cache_discovery=False) # pylint: disable=no-member
-  return _thread_local_service.service
+    _thread_local_service.entry = (credentials, service)
+    return service
+  return cached[1]
 
 
 def imap_bounded(executor, fn, items, max_in_flight):
@@ -163,18 +169,15 @@ def imap_bounded(executor, fn, items, max_in_flight):
   doesn't grow with the size of a (potentially huge) mbox file.
   """
   iterator = iter(items)
-  in_flight = {
-      executor.submit(fn, item): item
-      for item in itertools.islice(iterator, max_in_flight)
-  }
+  in_flight = set(
+      executor.submit(fn, item) for item in itertools.islice(iterator, max_in_flight))
   while in_flight:
-    done, _ = concurrent.futures.wait(
+    done, in_flight = concurrent.futures.wait(
         in_flight, return_when=concurrent.futures.FIRST_COMPLETED)
     for future in done:
-      del in_flight[future]
       yield future.result()
-    for item in itertools.islice(iterator, len(done)):
-      in_flight[executor.submit(fn, item)] = item
+    in_flight.update(
+        executor.submit(fn, item) for item in itertools.islice(iterator, len(done)))
 
 
 def get_credentials(username):
@@ -305,13 +308,22 @@ def process_mbox_file(full_filename, labelname, service, username, labels,
   number_of_successes_in_label = 0
   number_of_failures_in_label = 0
 
+  message_concurrency = credentials is not None and ARGS.message_concurrency > 1
+
   def import_one(item):
     index, message = item
     logging.info("Processing message %d in label '%s'", index, labelname)
     process_message_headers(message)
-    worker_service = (
-        get_service_for_thread(credentials) if credentials is not None
-        else service)
+    try:
+      worker_service = (
+          get_service_for_thread(credentials) if message_concurrency
+          else service)
+    except Exception: # pylint: disable=broad-exception-caught
+      # Treat a transient failure to build a per-thread service the same way
+      # import_message treats a transient API failure: one failed message,
+      # not an exception that aborts the rest of this user's import.
+      logging.exception('Failed to build a Gmail service for message %d', index)
+      return False
     return import_message(worker_service, username, message, label_id)
 
   mbox = mailbox.mbox(full_filename)
@@ -319,7 +331,7 @@ def process_mbox_file(full_filename, labelname, service, username, labels,
     items = ((index, message) for index, message in enumerate(mbox)
               if index >= ARGS.from_message)
 
-    if credentials is not None and ARGS.message_concurrency > 1:
+    if message_concurrency:
       with concurrent.futures.ThreadPoolExecutor(
           max_workers=ARGS.message_concurrency) as executor:
         results = imap_bounded(
@@ -504,6 +516,10 @@ def main(argv): # pylint: disable=too-many-locals
   """
   global ARGS # pylint: disable=global-statement
   ARGS = parser.parse_args(argv)
+  if ARGS.message_concurrency < 1:
+    parser.error('--message_concurrency must be at least 1')
+  if ARGS.user_concurrency < 1:
+    parser.error('--user_concurrency must be at least 1')
 
   setup_logging()
 
