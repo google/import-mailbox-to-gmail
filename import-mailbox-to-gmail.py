@@ -20,12 +20,15 @@ limitations under the License.
 """
 
 import argparse
+import concurrent.futures
 import io
+import itertools
 import logging
 import logging.handlers
 import mailbox
 import os
 import sys
+import threading
 
 import httplib2
 import google.auth
@@ -95,6 +98,25 @@ parser.add_argument(
     help=
     'Maximum number of exponential backoff retries for failures (default: 10)')
 parser.add_argument(
+    '--message_concurrency',
+    default=4,
+    type=int,
+    help=
+    'Number of messages to import concurrently per mbox file (default: 4). '
+    "The Gmail API's default quota for messages.import is 25 units per call "
+    'and 6,000 units/minute per user, i.e. about 4 imports/second sustained '
+    "per user, so pushing this much higher than that mostly just adds "
+    'retries rather than throughput.')
+parser.add_argument(
+    '--user_concurrency',
+    default=4,
+    type=int,
+    help=
+    'Number of users to import concurrently (default: 4). Each user draws '
+    'from their own per-user quota, so raising this scales throughput '
+    'across many users, up to the project-wide quota (default 1,200,000 '
+    'units/minute).')
+parser.add_argument(
     '--log',
     required=False,
     default=f'{APPLICATION_NAME}-{os.getpid()}.log',
@@ -116,6 +138,43 @@ parser.add_argument(
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
                     logging_level='INFO')
 ARGS = None
+
+# httplib2.Http (and services built on it) isn't safe to share across
+# threads, so each worker thread gets its own. Credentials themselves are
+# safe to share and are reused to avoid re-authenticating per thread.
+_thread_local_service = threading.local()
+
+
+def get_service_for_thread(credentials):
+  """Returns a Gmail API service object local to the current thread."""
+  if not hasattr(_thread_local_service, 'service'):
+    http = set_user_agent(
+        httplib2.Http(), f'{APPLICATION_NAME}-{APPLICATION_VERSION}')
+    authed_http = AuthorizedHttp(credentials, http=http)
+    _thread_local_service.service = discovery.build(
+        'gmail', 'v1', http=authed_http, cache_discovery=False) # pylint: disable=no-member
+  return _thread_local_service.service
+
+
+def imap_bounded(executor, fn, items, max_in_flight):
+  """Applies fn to items via executor, yielding results as they complete.
+
+  At most max_in_flight futures are in flight at once, so memory use
+  doesn't grow with the size of a (potentially huge) mbox file.
+  """
+  iterator = iter(items)
+  in_flight = {
+      executor.submit(fn, item): item
+      for item in itertools.islice(iterator, max_in_flight)
+  }
+  while in_flight:
+    done, _ = concurrent.futures.wait(
+        in_flight, return_when=concurrent.futures.FIRST_COMPLETED)
+    for future in done:
+      del in_flight[future]
+      yield future.result()
+    for item in itertools.islice(iterator, len(done)):
+      in_flight[executor.submit(fn, item)] = item
 
 
 def get_credentials(username):
@@ -226,8 +285,15 @@ def process_message_headers(message):
     logging.exception('Failed to fix brackets in Message-ID header')
 
 
-def process_mbox_file(full_filename, labelname, service, username, labels):
-  """Imports all messages from a single mbox file."""
+def process_mbox_file(full_filename, labelname, service, username, labels,
+                       credentials=None):
+  """Imports all messages from a single mbox file.
+
+  If credentials is given and --message_concurrency > 1, messages are
+  imported concurrently using a per-thread service built from credentials
+  (see get_service_for_thread). Otherwise, messages are imported
+  sequentially using the given service, exactly as before.
+  """
   try:
     label_id = get_label_id_from_name(service, username, labels, labelname)
   except Exception: # pylint: disable=broad-exception-caught
@@ -239,19 +305,36 @@ def process_mbox_file(full_filename, labelname, service, username, labels):
   number_of_successes_in_label = 0
   number_of_failures_in_label = 0
 
+  def import_one(item):
+    index, message = item
+    logging.info("Processing message %d in label '%s'", index, labelname)
+    process_message_headers(message)
+    worker_service = (
+        get_service_for_thread(credentials) if credentials is not None
+        else service)
+    return import_message(worker_service, username, message, label_id)
+
   mbox = mailbox.mbox(full_filename)
   try:
-    for index, message in enumerate(mbox):
-      if index < ARGS.from_message:
-        continue
-      logging.info("Processing message %d in label '%s'", index, labelname)
+    items = ((index, message) for index, message in enumerate(mbox)
+              if index >= ARGS.from_message)
 
-      process_message_headers(message)
-
-      if import_message(service, username, message, label_id):
-        number_of_successes_in_label += 1
-      else:
-        number_of_failures_in_label += 1
+    if credentials is not None and ARGS.message_concurrency > 1:
+      with concurrent.futures.ThreadPoolExecutor(
+          max_workers=ARGS.message_concurrency) as executor:
+        results = imap_bounded(
+            executor, import_one, items, ARGS.message_concurrency * 2)
+        for success in results:
+          if success:
+            number_of_successes_in_label += 1
+          else:
+            number_of_failures_in_label += 1
+    else:
+      for item in items:
+        if import_one(item):
+          number_of_successes_in_label += 1
+        else:
+          number_of_failures_in_label += 1
   finally:
     mbox.close()
 
@@ -264,13 +347,16 @@ def process_mbox_file(full_filename, labelname, service, username, labels):
   return number_of_successes_in_label, number_of_failures_in_label
 
 
-def process_mbox_files(username, service, labels): # pylint: disable=too-many-locals
+def process_mbox_files(username, service, labels, credentials=None): # pylint: disable=too-many-locals
   """Iterates over the mbox files found in the user's subdir and imports them.
 
   Args:
     username: The email address of the user to import into.
     service: A Gmail API service object.
     labels: Dictionary of the user's labels and their IDs.
+    credentials: Credentials used to build per-thread services when
+      --message_concurrency > 1. If None, messages are imported
+      sequentially using service.
   Returns:
     A tuple of: Number of labels imported without error,
                 Number of labels imported with some errors,
@@ -318,7 +404,7 @@ def process_mbox_files(username, service, labels): # pylint: disable=too-many-lo
       logging.info("Starting processing of '%s'", full_filename)
 
       result = process_mbox_file(
-          full_filename, labelname, service, username, labels)
+          full_filename, labelname, service, username, labels, credentials)
 
       if result is None:
         number_of_labels_failed += 1
@@ -400,7 +486,7 @@ def process_user(username):
       raise
 
     try:
-      result = process_mbox_files(username, service, labels)
+      result = process_mbox_files(username, service, labels, credentials)
     except Exception: # pylint: disable=broad-exception-caught
       logging.error("Can't process mbox files for user %s", username)
       raise
@@ -430,30 +516,38 @@ def main(argv): # pylint: disable=too-many-locals
   number_of_users_imported_with_some_errors = 0
   number_of_users_failed = 0
 
-  for username in next(os.walk(ARGS.dir))[1]:
-    result = process_user(username)
-    if result:
-      if result[2] == 0 and result[4] == 0:
-        number_of_users_imported_without_error += 1
-      elif result[0] > 0 or result[3] > 0:
-        number_of_users_imported_with_some_errors += 1
+  usernames = next(os.walk(ARGS.dir))[1]
+  with concurrent.futures.ThreadPoolExecutor(
+      max_workers=ARGS.user_concurrency) as executor:
+    future_to_username = {
+        executor.submit(process_user, username): username
+        for username in usernames
+    }
+    for future in concurrent.futures.as_completed(future_to_username):
+      username = future_to_username[future]
+      result = future.result()
+      if result:
+        if result[2] == 0 and result[4] == 0:
+          number_of_users_imported_without_error += 1
+        elif result[0] > 0 or result[3] > 0:
+          number_of_users_imported_with_some_errors += 1
+        else:
+          number_of_users_failed += 1
+        number_of_labels_imported_without_error += result[0]
+        number_of_labels_imported_with_some_errors += result[1]
+        number_of_labels_failed += result[2]
+        number_of_messages_imported_without_error += result[3]
+        number_of_messages_failed += result[4]
+        logging.info('Done importing user %s. Labels: %d succeeded, %d with some '
+                     'errors, %d failed. Messages: %d succeeded, %d failed.',
+                     username,
+                     result[0],
+                     result[1],
+                     result[2],
+                     result[3],
+                     result[4])
       else:
         number_of_users_failed += 1
-      number_of_labels_imported_without_error += result[0]
-      number_of_labels_imported_with_some_errors += result[1]
-      number_of_labels_failed += result[2]
-      number_of_messages_imported_without_error += result[3]
-      number_of_messages_failed += result[4]
-      logging.info('Done importing user %s. Labels: %d succeeded, %d with some '
-                   'errors, %d failed. Messages: %d succeeded, %d failed.',
-                   username,
-                   result[0],
-                   result[1],
-                   result[2],
-                   result[3],
-                   result[4])
-    else:
-      number_of_users_failed += 1
 
   logging.info("*** Done importing all users from directory '%s'", ARGS.dir)
   logging.info('*** Import summary:')
