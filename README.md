@@ -139,6 +139,24 @@ viewing the `import-mailbox-to-gmail.log` file.
 
   e.g. `python3 import-mailbox-to-gmail.py --from_message 74336`
 
+* By default the script imports several messages and several users at once
+  (`--message_concurrency`, `--user_concurrency`, both default to 4) instead
+  of doing everything one message at a time. This is controlled by the
+  [Gmail API's usage quota](https://developers.google.com/workspace/gmail/api/reference/quota):
+  `messages.import` costs 25 quota units, and each user has their own quota
+  of 6,000 units/minute (about 4 imports/second sustained), separate from
+  every other user. That means:
+  * Raising `--message_concurrency` speeds up importing one very large
+    mailbox, up to about 4 messages/second per user - going much higher
+    mostly just adds retries rather than throughput.
+  * Raising `--user_concurrency` speeds up importing many users at once,
+    since each user has an independent quota bucket. This is the main lever
+    for large migrations (e.g. `--user_concurrency 20`) - the project-wide
+    quota (1,200,000 units/minute by default) is shared across all users,
+    so the more users you run concurrently, the closer you get to using all
+    of it.
+  * Set either to `1` to fall back to the old one-at-a-time behavior.
+
 * If any of the folders have a ".mbox" extension, it will be dropped when
   creating the label for it in Gmail.
 
